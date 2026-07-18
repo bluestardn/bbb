@@ -1,12 +1,12 @@
 {
-  "center_name": "VKU Center",
+  "center_name": "Edura",
   "logo_url": "theme/logo.png",
   "favicon_url": "theme/favicon.ico",
   "hotline": "0236.xxxx.xxx",
-  "support_email": "support@your-domain.com",
+  "support_email": "support@edura.edu.vn",
   "colors": {
-    "primary": "#3c5a99",
-    "secondary": "#2e4473",
+    "primary": "#dc2626",
+    "secondary": "#991b1b",
     "background": "#f8fafc",
     "text": "#1e293b"
   }

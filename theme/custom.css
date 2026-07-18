@@ -1,9 +1,9 @@
-/* Custom Styles for BigBlueButton HTML5 Client */
+/* Custom Styles for BigBlueButton HTML5 Client — Edura Theme */
 
-/* Primary Brand Color adjustments */
+/* Primary Brand Color adjustments (Edura Red scheme) */
 :root {
-  --color-primary: #3c5a99;
-  --color-primary-dark: #2e4473;
+  --color-primary: #dc2626;
+  --color-primary-dark: #991b1b;
 }
 
 /* Custom logo watermark in the bottom left or corner of the presentation */
@@ -17,14 +17,15 @@
 
 /* Custom Hotline message footer in the Chat or Sidebar area */
 .noteArea--Z1S4YV::after {
-  content: "Hotline hỗ trợ kỹ thuật VKU Center: 0236.xxxx.xxx";
+  content: "Hotline hỗ trợ kỹ thuật Edura: 0236.xxxx.xxx";
   display: block;
   padding: 8px;
   margin-top: 10px;
-  background-color: #e8f0fe;
-  color: #2e4473;
+  background-color: #fef2f2; /* Light red background */
+  color: #991b1b; /* Dark red text */
   border-radius: 4px;
   font-weight: bold;
   font-size: 11px;
   text-align: center;
+  border: 1px solid #fca5a5;
 }
