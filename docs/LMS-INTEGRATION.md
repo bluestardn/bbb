@@ -13,58 +13,274 @@ BBB_SECURITY_SALT=your_bbb_security_salt_here
 
 ---
 
-## 2. Cách tính toán Checksum (Mã xác thực)
+## 2. File cấu hình Laravel: `config/bbb.php`
 
-Tất cả các API request gửi đến BBB đều bắt buộc phải kèm theo tham số `checksum`. Checksum được tạo bằng cách băm chuỗi kết hợp theo thuật toán SHA1:
-
-$$\text{checksum} = \text{sha1}(\text{action} + \text{query\_string} + \text{shared\_secret})$$
-
-*   `action`: Tên hàm API (ví dụ: `create`, `join`, `end`).
-*   `query_string`: Các tham số truyền vào (ví dụ: `meetingID=123&name=LopHoc`). Lưu ý các tham số cần được sắp xếp theo thứ tự bảng chữ cái hoặc theo đúng thứ tự lúc ghép chuỗi để khớp với checksum.
-*   `shared_secret`: Khóa bảo mật lấy từ lệnh `bbb-conf --secret` trên server BBB.
-
-### Ví dụ code PHP tính Checksum:
+**Quang** tạo file `config/bbb.php` với nội dung dưới đây để load cấu hình từ `.env`:
 
 ```php
-public function generateChecksum(string $action, array $params, string $secret): string
+<?php
+
+return [
+    'base_url' => env('BBB_SERVER_BASE_URL'),
+    'security_salt' => env('BBB_SECURITY_SALT'),
+];
+```
+
+---
+
+## 3. Database Migration
+
+**Quang** tạo file migration bằng lệnh:
+```bash
+php artisan make:migration add_bbb_to_online_session_platform
+```
+
+Nội dung file migration:
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
 {
-    // Sắp xếp các tham số theo key để đảm bảo tính nhất quán
-    ksort($params);
-    $queryString = http_build_query($params);
-    return sha1($action . $queryString . $secret);
+    public function up(): void
+    {
+        if (!Schema::hasTable('table_center_online_session')
+            || !Schema::hasColumn('table_center_online_session', 'meeting_platform')) {
+            return;
+        }
+
+        // Cập nhật enum để thêm giá trị 'bbb'
+        DB::statement(
+            "ALTER TABLE table_center_online_session MODIFY COLUMN meeting_platform "
+            . "ENUM('zoom','google_meet','webrtc','external','jitsi','bbb') NOT NULL DEFAULT 'external'"
+        );
+    }
+
+    public function down(): void
+    {
+        if (!Schema::hasTable('table_center_online_session')) {
+            return;
+        }
+
+        // Đưa các session có platform là 'bbb' về 'external' trước khi xóa giá trị enum
+        DB::table('table_center_online_session')
+            ->where('meeting_platform', 'bbb')
+            ->update([
+                'meeting_platform' => 'external',
+                'updated_at' => now(),
+            ]);
+
+        DB::statement(
+            "ALTER TABLE table_center_online_session MODIFY COLUMN meeting_platform "
+            . "ENUM('zoom','google_meet','webrtc','external','jitsi') NOT NULL DEFAULT 'external'"
+        );
+    }
+};
+```
+
+---
+
+## 4. Code mẫu `app/Services/BbbService.php`
+
+**Quang** tạo file `app/Services/BbbService.php` để đóng gói các hàm tương tác API.
+
+```php
+<?php
+
+namespace App\Services;
+
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+
+class BbbService
+{
+    private string $baseUrl;
+    private string $salt;
+
+    public function __construct()
+    {
+        $this->baseUrl = rtrim(config('bbb.base_url', ''), '/') . '/';
+        $this->salt = config('bbb.security_salt', '');
+    }
+
+    /**
+     * Kiểm tra service đã được cấu hình chưa.
+     */
+    public function isConfigured(): bool
+    {
+        return !empty($this->baseUrl) && !empty($this->salt);
+    }
+
+    /**
+     * Tạo mã xác thực checksum SHA1.
+     */
+    private function generateChecksum(string $action, string $queryString): string
+    {
+        return sha1($action . $queryString . $this->salt);
+    }
+
+    /**
+     * Build URL hoàn chỉnh gửi tới BBB.
+     */
+    private function buildUrl(string $action, array $params): string
+    {
+        ksort($params);
+        $queryString = http_build_query($params);
+        $checksum = $this->generateChecksum($action, $queryString);
+        return $this->baseUrl . $action . '?' . $queryString . '&checksum=' . $checksum;
+    }
+
+    /**
+     * Tạo phòng học (idempotent API).
+     */
+    public function createMeeting(string $meetingId, string $name, string $attendeePw, string $moderatorPw): bool
+    {
+        if (!$this->isConfigured()) return false;
+
+        $params = [
+            'meetingID' => $meetingId,
+            'name' => $name,
+            'attendeePW' => $attendeePw,
+            'moderatorPW' => $moderatorPw,
+            'record' => 'true', // Mặc định tự động ghi hình
+            'autoStartRecording' => 'true',
+            'allowStartStopRecording' => 'false',
+        ];
+
+        $url = $this->buildUrl('create', $params);
+
+        try {
+            $response = Http::get($url);
+            if ($response->successful()) {
+                $xml = simplexml_load_string($response->body());
+                return (string) $xml->returncode === 'SUCCESS';
+            }
+        } catch (\Exception $e) {
+            Log::error('BBB createMeeting error: ' . $e->getMessage());
+        }
+
+        return false;
+    }
+
+    /**
+     * Lấy URL để người dùng join vào lớp.
+     */
+    public function getJoinUrl(string $meetingId, string $userName, string $password, string $userId): string
+    {
+        $params = [
+            'meetingID' => $meetingId,
+            'fullName' => $userName,
+            'password' => $password,
+            'userID' => $userId,
+            'redirect' => 'true',
+        ];
+
+        return $this->buildUrl('join', $params);
+    }
+
+    /**
+     * Kiểm tra phòng học có đang hoạt động không.
+     */
+    public function isMeetingRunning(string $meetingId): bool
+    {
+        if (!$this->isConfigured()) return false;
+
+        $url = $this->buildUrl('isMeetingRunning', ['meetingID' => $meetingId]);
+
+        try {
+            $response = Http::get($url);
+            if ($response->successful()) {
+                $xml = simplexml_load_string($response->body());
+                return (string) $xml->running === 'true';
+            }
+        } catch (\Exception $e) {
+            Log::error('BBB isMeetingRunning error: ' . $e->getMessage());
+        }
+
+        return false;
+    }
+
+    /**
+     * Đóng phòng học từ xa.
+     */
+    public function endMeeting(string $meetingId, string $moderatorPw): bool
+    {
+        if (!$this->isConfigured()) return false;
+
+        $url = $this->buildUrl('end', [
+            'meetingID' => $meetingId,
+            'password' => $moderatorPw,
+        ]);
+
+        try {
+            $response = Http::get($url);
+            if ($response->successful()) {
+                $xml = simplexml_load_string($response->body());
+                return (string) $xml->returncode === 'SUCCESS';
+            }
+        } catch (\Exception $e) {
+            Log::error('BBB endMeeting error: ' . $e->getMessage());
+        }
+
+        return false;
+    }
 }
 ```
 
 ---
 
-## 3. Các API cần thiết
+## 5. Tích hợp với `MeetingAccessService.php`
 
-### A. API Tạo Phòng (`create`)
-*   **Mục đích:** Khởi tạo phòng học. API này có tính chất **idempotent** (gọi nhiều lần với cùng `meetingID` sẽ không làm mất phòng cũ mà chỉ trả về trạng thái của phòng đó). Do đó, LMS có thể gọi API này mỗi khi có người nhấn nút "Vào lớp" để đảm bảo phòng luôn sẵn sàng.
-*   **Tham số chính:**
-    *   `meetingID`: Mã duy nhất định danh buổi học (ví dụ: `lhp_session_{id}`).
-    *   `name`: Tên lớp học hiển thị cho user.
-    *   `moderatorPW`: Mật khẩu cho Giáo viên (ví dụ: `mp`).
-    *   `attendeePW`: Mật khẩu cho Học viên (ví dụ: `ap`).
-    *   `record`: `true` (nếu muốn tự động bật tính năng ghi hình lớp học).
+**Quang** cập nhật logic trong hàm `getMeetingUrl` để xử lý chuyển hướng khi lớp học dùng BBB:
 
-### B. API Tham Gia Phòng (`join`)
-*   **Mục đích:** Lấy URL cho người dùng truy cập.
-*   **Tham số chính:**
-    *   `meetingID`: Định danh phòng đã tạo.
-    *   `fullName`: Tên hiển thị của học viên/giáo viên khi vào phòng.
-    *   `password`: Truyền `moderatorPW` để vào với quyền giáo viên (Moderator), truyền `attendeePW` để vào với quyền học viên (Viewer).
-    *   `redirect`: `true` (mặc định, trình duyệt tự động nhảy vào phòng).
+```php
+use App\Services\BbbService;
 
-### C. API Kết Thúc Phòng (`end`)
-*   **Mục đích:** Giáo viên chủ động kết thúc phòng học, kick toàn bộ học viên ra ngoài.
-*   **Tham số chính:**
-    *   `meetingID`: Định danh phòng cần đóng.
-    *   `password`: Mật khẩu giáo viên (`moderatorPW`).
+// Khai báo Dependency Injection trong __construct
+public function __construct(
+    private readonly BbbService $bbbService,
+    // ...
+) {}
+
+// Trong hàm getMeetingUrl(object $session, ?object $config = null, bool $isAdmin = false)
+$platform = $session->meeting_platform ?? ($config ? $config->room_type : null) ?? 'external';
+
+if ($platform === 'bbb') {
+    return $this->buildBbbUrl($session, $isAdmin);
+}
+
+// Viết thêm hàm buildBbbUrl:
+private function buildBbbUrl(object $session, bool $isTeacher): ?string
+{
+    if (!$this->bbbService->isConfigured()) {
+        return null;
+    }
+
+    $meetingId = 'session_' . $session->id;
+    $meetingName = $session->ten_lop ?? ('Lớp học ' . $meetingId);
+    
+    // Mật khẩu cố định hoặc sinh tự động theo thuật toán riêng của LMS
+    $attendeePw = md5($meetingId . '_student');
+    $moderatorPw = md5($meetingId . '_teacher');
+
+    // Luôn đảm bảo phòng đã được tạo trước khi sinh Join URL
+    $this->bbbService->createMeeting($meetingId, $meetingName, $attendeePw, $moderatorPw);
+
+    $userEmail = session()->get('email') ?? session()->get('emailtrungtam') ?? 'guest';
+    $userName = session()->get('ten') ?? session()->get('ho_ten') ?? $userEmail;
+    
+    $password = $isTeacher ? $moderatorPw : $attendeePw;
+
+    return $this->bbbService->getJoinUrl($meetingId, $userName, $password, $userEmail);
+}
+```
 
 ---
 
-## 4. Flutter Integration (Dành cho Tuấn)
+## 6. Flutter Integration (Dành cho Tuấn)
 
 Đối với ứng dụng di động Flutter:
 1.  **Luồng hoạt động:** 
