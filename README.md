@@ -28,7 +28,9 @@ Bộ công cụ triển khai & tùy biến BigBlueButton cho hệ thống LMS VK
 sudo apt update && sudo apt upgrade -y
 
 # Cài các gói cần thiết
-sudo apt install -y git curl wget gnupg apt-transport-https ca-certificates
+sudo apt install -y \
+  git curl wget gnupg apt-transport-https ca-certificates \
+  jq yq gzip
 
 # Clone repo này
 cd /opt
@@ -111,16 +113,76 @@ sudo apt install coturn -y
 ### Bước 5 — Áp dụng Custom Theme
 
 ```bash
-# Chạy script tùy biến giao diện
+# Cập nhật theme/branding.json trước khi chạy.
 cd /opt/bbb
 sudo bash scripts/apply-theme.sh
 ```
 
+Script yêu cầu `bbb-conf`, `jq`, `yq`, `gzip`, `nginx`, `python3` và
+`sha256sum`. Các công cụ này đã được cài ở bước chuẩn bị hệ thống hoặc đi kèm
+gói BBB.
+
 Script này sẽ:
-- Đổi logo, favicon sang thương hiệu trung tâm
-- Đổi màu sắc chủ đạo
-- Bổ sung số hotline hỗ trợ
-- Ẩn branding mặc định của BBB
+- Cài logo, favicon và CSS thương hiệu vào đường dẫn web ổn định.
+- Cập nhật tên và copyright của HTML5 client.
+- Áp dụng logo, favicon, màu sắc và tiêu đề cho phòng học trực tuyến.
+- Việt hóa trạng thái phòng không tồn tại, hết hạn, bị từ chối, mất kết nối và
+  kết thúc buổi học.
+- Hiển thị logo và hotline hỗ trợ trên màn hình lỗi và màn hình kết thúc.
+- Áp dụng giao diện Edura cho trang xem lại bản ghi, gồm cả chế độ sáng/tối.
+- Hiển thị thông báo tiếng Việt khi bản ghi đang xử lý, không tồn tại hoặc tải
+  thất bại.
+- Hiển thị hotline/email hỗ trợ trong welcome footer.
+- Merge cấu hình vào `/etc/bigbluebutton` mà không xóa override hiện có.
+- Tự đăng ký hook để áp dụng lại theme sau khi nâng cấp BBB.
+
+Theme sử dụng logo phía server. Ứng dụng tạo meeting không cần truyền thêm
+tham số `logo`, tránh hiển thị trùng logo trong phòng học.
+
+Các trạng thái đã được tùy biến:
+
+| Khu vực | Nội dung |
+|---|---|
+| Phòng học | Logo, favicon, tên Edura, màu thương hiệu và hotline hỗ trợ |
+| Lỗi tham gia | Thông báo tiếng Việt cho link sai, phòng hết hạn, bị từ chối hoặc không có quyền |
+| Mất kết nối | Thông báo kiểm tra mạng và trạng thái đang kết nối lại |
+| Kết thúc buổi học | Logo, nội dung tiếng Việt và hướng dẫn chuyển về LMS |
+| Playback | Logo, màu điều khiển, tiêu đề và thông tin hỗ trợ |
+| Playback lỗi | Thông báo bản ghi đang xử lý, không tồn tại hoặc tạm thời không tải được |
+
+Locale mặc định của HTML5 client được đặt thành `vi-VN`. Các chuỗi bổ sung nằm
+trong `theme/locale-overrides.json`. Script lưu bản locale trước khi chỉnh sửa
+để `remove-theme.sh` có thể khôi phục.
+
+Kiểm tra theme:
+
+```bash
+sudo nginx -t
+sudo bbb-conf --check
+curl -I https://bbb.your-domain.com/branding/custom.css
+curl -I https://bbb.your-domain.com/branding/playback.css
+curl -I https://bbb.your-domain.com/logo.png
+curl -I https://bbb.your-domain.com/favicon.ico
+```
+
+Kiểm tra thủ công sau khi áp dụng:
+
+1. Tạo meeting mới và xác nhận chỉ hiển thị một logo Edura.
+2. Mở link phòng không hợp lệ để kiểm tra thông báo và hotline.
+3. Kết thúc meeting và kiểm tra màn hình chuyển về LMS.
+4. Mở recording đã publish để kiểm tra playback.
+5. Mở URL playback với recording ID không tồn tại để kiểm tra trạng thái lỗi.
+
+Meeting đã tạo trước khi áp dụng có thể giữ welcome message hoặc tham số
+branding cũ. Hãy tạo meeting ID mới khi kiểm tra.
+
+Gỡ theme:
+
+```bash
+sudo bash scripts/remove-theme.sh
+```
+
+Chi tiết xem [docs/THEME.md](docs/THEME.md).
 
 ### Bước 6 — Cấu hình Recording tự động lên Google Drive
 
@@ -171,15 +233,19 @@ bbb/
 ├── theme/
 │   ├── logo.png               # Logo trung tâm
 │   ├── favicon.ico            # Favicon
-│   ├── custom.css             # CSS override giao diện
+│   ├── custom.css.template    # CSS template giao diện
+│   ├── playback.css.template  # CSS template trang xem lại bản ghi
+│   ├── locale-overrides.json  # Chuỗi tiếng Việt bổ sung
 │   └── branding.json          # Tên, màu sắc, hotline
 ├── scripts/
 │   ├── apply-theme.sh         # Script áp dụng theme lên BBB
+│   ├── remove-theme.sh        # Script gỡ theme
 │   ├── sync-recordings.sh     # Script đồng bộ recording → Google Drive
 │   ├── backup-config.sh       # Backup cấu hình BBB
 │   ├── test-api.sh            # Script test API nhanh
 │   └── healthcheck.sh         # Kiểm tra trạng thái server
 └── docs/
+    ├── THEME.md               # Chi tiết theme, trạng thái lỗi và playback
     ├── NAT-SETUP.md           # Hướng dẫn chi tiết NAT
     ├── RECORDING-PIPELINE.md  # Chi tiết pipeline recording
     └── LMS-INTEGRATION.md     # Hướng dẫn tích hợp LMS Laravel
@@ -203,7 +269,9 @@ Chi tiết tích hợp xem: [docs/LMS-INTEGRATION.md](docs/LMS-INTEGRATION.md)
 
 ## Hotline & Hỗ trợ
 
-Số hotline hỗ trợ kỹ thuật hiển thị trên giao diện BBB được cấu hình trong `theme/branding.json`.
+Tên trung tâm, hotline, email hỗ trợ và bảng màu được cấu hình trong
+`theme/branding.json`. Phải xác nhận lại thông tin hỗ trợ trước mỗi lần triển
+khai lên môi trường chính thức.
 
 ---
 

@@ -1,0 +1,5 @@
+config/.env
+config/gdrive-service-account.json
+gdrive-service-account.json
+*.bak
+*.local

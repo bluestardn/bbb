@@ -1,0 +1,97 @@
+:root {
+  --color-primary: {{PRIMARY_COLOR}};
+  --color-primary-dark: {{SECONDARY_COLOR}};
+  --color-primary-light: color-mix(in srgb, {{PRIMARY_COLOR}} 12%, transparent);
+  --loader-bg: {{BACKGROUND_COLOR}};
+  --loader-color: {{PRIMARY_COLOR}};
+}
+
+body {
+  background-color: {{BACKGROUND_COLOR}};
+  color: {{TEXT_COLOR}};
+}
+
+a {
+  color: {{PRIMARY_COLOR}};
+}
+
+button:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid {{PRIMARY_COLOR}};
+  outline-offset: 2px;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none !important;
+  border-color: {{PRIMARY_COLOR}} !important;
+  box-shadow: inset 0 0 0 1px {{PRIMARY_COLOR}} !important;
+}
+
+form:has([data-test="sendMessageButton"]) div:has(> textarea:focus-visible) {
+  border-color: {{PRIMARY_COLOR}} !important;
+  box-shadow: inset 0 0 0 1px {{PRIMARY_COLOR}} !important;
+}
+
+form:has([data-test="sendMessageButton"]) textarea:focus-visible {
+  box-shadow: none !important;
+}
+
+[data-test="messageTitle"] {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 94px !important;
+  padding: 52px 10px 4px !important;
+  background-image: url("/logo.png") !important;
+  background-position: 10px 6px !important;
+  background-repeat: no-repeat !important;
+  background-size: auto 38px !important;
+  border-bottom: 1px solid color-mix(in srgb, {{PRIMARY_COLOR}} 24%, transparent) !important;
+}
+
+[data-test="messageTitle"]::after {
+  content: "Hotline: {{HOTLINE}} · {{SUPPORT_EMAIL}}";
+  display: block;
+  margin-top: 2px;
+  color: {{TEXT_COLOR}};
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 15px;
+  text-align: left;
+  text-transform: none;
+}
+
+[data-test="errorScreenMessage"] {
+  background: #ffffff !important;
+  border-radius: 12px !important;
+  box-shadow: 0 12px 32px rgb(15 23 42 / 14%) !important;
+  box-sizing: border-box !important;
+  color: {{TEXT_COLOR}} !important;
+  margin: 0 auto !important;
+  max-width: min(560px, calc(100vw - 32px)) !important;
+  padding: 88px 28px 28px !important;
+  position: relative !important;
+  text-align: center !important;
+}
+
+[data-test="errorScreenMessage"]::before {
+  background: url("/logo.png") center / contain no-repeat;
+  content: "";
+  height: 42px;
+  left: 50%;
+  position: absolute;
+  top: 24px;
+  transform: translateX(-50%);
+  width: 132px;
+}
+
+[data-test="errorScreenMessage"]::after {
+  color: #64748b;
+  content: "Hỗ trợ: Hotline {{HOTLINE}} · {{SUPPORT_EMAIL}}";
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  margin-top: 18px;
+}
