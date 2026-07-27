@@ -16,6 +16,7 @@ readonly LOCALE_GZIP="${LOCALE_FILE}.gz"
 readonly NGINX_CONFIG="/etc/bigbluebutton/nginx/edura-branding.nginx"
 readonly APPLY_CONFIG="/etc/bigbluebutton/bbb-conf/apply-config.sh"
 readonly STATE_FILE="${INSTALL_ROOT}/previous-config.json"
+readonly DEFAULT_PRESENTATION_STATE="${INSTALL_ROOT}/previous-default-presentation.json"
 readonly PLAYBACK_ROOT="/var/bigbluebutton/playback/presentation/2.3"
 readonly PLAYBACK_INDEX="${PLAYBACK_ROOT}/index.html"
 readonly PLAYBACK_STATE="${INSTALL_ROOT}/previous-playback.json"
@@ -239,6 +240,7 @@ update_web_properties() {
     CENTER_NAME="${CENTER_NAME}" \
     HOTLINE="${HOTLINE}" \
     SUPPORT_EMAIL="${SUPPORT_EMAIL}" \
+    DEFAULT_PRESENTATION_URL="${DEFAULT_PRESENTATION_URL}" \
     python3 - "${WEB_CONFIG}" <<'PY'
 import os
 import sys
@@ -257,6 +259,9 @@ def java_escape(value):
 
 
 values = {
+    "beans.presentationService.defaultUploadedPresentation": (
+        os.environ["DEFAULT_PRESENTATION_URL"]
+    ),
     "defaultWelcomeMessage": java_escape(
         f"Chào mừng bạn đến với lớp học trực tuyến của "
         f"<b>{escape(os.environ['CENTER_NAME'])}</b>."
@@ -282,6 +287,35 @@ for key, value in values.items():
         updated.append(f"{key}={value}")
 
 path.write_text("\n".join(updated) + "\n", encoding="utf-8")
+PY
+}
+
+capture_previous_default_presentation() {
+    [[ -f "${DEFAULT_PRESENTATION_STATE}" ]] && return
+
+    python3 - "${WEB_CONFIG}" "${DEFAULT_PRESENTATION_STATE}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+key = "beans.presentationService.defaultUploadedPresentation"
+path = Path(sys.argv[1])
+lines = path.read_text(encoding="utf-8").splitlines() if path.exists() else []
+value = None
+
+for line in lines:
+    current_key, separator, current_value = line.partition("=")
+    if separator and current_key == key:
+        value = current_value
+
+state = {
+    "present": value is not None,
+    "value": value,
+}
+Path(sys.argv[2]).write_text(
+    json.dumps(state, ensure_ascii=False, indent=2) + "\n",
+    encoding="utf-8",
+)
 PY
 }
 
@@ -427,7 +461,8 @@ for required_file in \
     playback.css.template \
     locale-overrides.json \
     favicon.ico \
-    logo.png; do
+    logo.png \
+    slide-1.png; do
     [[ -f "${SOURCE_THEME_DIR}/${required_file}" ]] \
         || fail "Missing theme file: ${SOURCE_THEME_DIR}/${required_file}"
 done
@@ -442,10 +477,12 @@ if [[ "${RUNNING_INSTALLED}" == false ]]; then
     install -m 0644 "${SOURCE_THEME_DIR}/locale-overrides.json" "${INSTALLED_THEME_DIR}/locale-overrides.json"
     install -m 0644 "${SOURCE_THEME_DIR}/favicon.ico" "${INSTALLED_THEME_DIR}/favicon.ico"
     install -m 0644 "${SOURCE_THEME_DIR}/logo.png" "${INSTALLED_THEME_DIR}/logo.png"
+    install -m 0644 "${SOURCE_THEME_DIR}/slide-1.png" "${INSTALLED_THEME_DIR}/slide-1.png"
     install -m 0755 "${BASH_SOURCE[0]}" "${INSTALL_ROOT}/apply-theme.sh"
 fi
 
 capture_previous_config
+capture_previous_default_presentation
 capture_previous_playback
 capture_previous_locale
 
@@ -469,6 +506,8 @@ TEXT_COLOR="$(read_branding_value '.colors.text')"
 readonly TEXT_COLOR
 BBB_DOMAIN="$(resolve_bbb_domain)"
 readonly BBB_DOMAIN
+DEFAULT_PRESENTATION_URL="https://${BBB_DOMAIN}/branding/slide-1.png"
+readonly DEFAULT_PRESENTATION_URL
 
 [[ "${BBB_DOMAIN}" =~ ^[A-Za-z0-9.-]+$ ]] || fail "Invalid BBB domain."
 [[ "${SUPPORT_EMAIL}" =~ ^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$ ]] \
@@ -511,6 +550,7 @@ install -m 0644 "${temporary_css}" "${WEB_ROOT}/custom.css"
 install -m 0644 "${temporary_playback_css}" "${WEB_ROOT}/playback.css"
 install -m 0644 "${INSTALLED_THEME_DIR}/favicon.ico" "${WEB_ROOT}/favicon.ico"
 install -m 0644 "${INSTALLED_THEME_DIR}/logo.png" "${WEB_ROOT}/logo.png"
+install -m 0644 "${INSTALLED_THEME_DIR}/slide-1.png" "${WEB_ROOT}/slide-1.png"
 
 cat >"${NGINX_CONFIG}" <<'NGINX'
 location = /favicon.ico {

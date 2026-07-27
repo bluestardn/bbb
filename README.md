@@ -124,6 +124,7 @@ gói BBB.
 
 Script này sẽ:
 - Cài logo, favicon và CSS thương hiệu vào đường dẫn web ổn định.
+- Dùng `theme/slide-1.png` làm slide mở đầu mặc định của phòng mới.
 - Cập nhật tên và copyright của HTML5 client.
 - Áp dụng logo, favicon, màu sắc và tiêu đề cho phòng học trực tuyến.
 - Việt hóa trạng thái phòng không tồn tại, hết hạn, bị từ chối, mất kết nối và
@@ -163,11 +164,12 @@ curl -I https://bbb.your-domain.com/branding/custom.css
 curl -I https://bbb.your-domain.com/branding/playback.css
 curl -I https://bbb.your-domain.com/logo.png
 curl -I https://bbb.your-domain.com/favicon.ico
+curl -I https://bbb.your-domain.com/branding/slide-1.png
 ```
 
 Kiểm tra thủ công sau khi áp dụng:
 
-1. Tạo meeting mới và xác nhận chỉ hiển thị một logo Edura.
+1. Tạo meeting mới và xác nhận chỉ hiển thị một logo Edura cùng slide mở đầu.
 2. Mở link phòng không hợp lệ để kiểm tra thông báo và hotline.
 3. Kết thúc meeting và kiểm tra màn hình chuyển về LMS.
 4. Mở recording đã publish để kiểm tra playback.
@@ -184,25 +186,38 @@ sudo bash scripts/remove-theme.sh
 
 Chi tiết xem [docs/THEME.md](docs/THEME.md).
 
-### Bước 6 — Cấu hình Recording tự động lên Google Drive
+### Bước 6 — Cấu hình Recording tự động lên Google Drive và LMS
 
 ```bash
 # Copy file cấu hình
-cp config/.env.example config/.env
+sudo install -o bigbluebutton -g bigbluebutton -m 0640 \
+  config/.env.example /opt/bbb/config/.env
 
 # Sửa thông tin Google Drive
-nano config/.env
+sudoedit /opt/bbb/config/.env
 ```
 
-Cấu hình cron job tự động upload:
+Cấu hình rclone remote tên `gdrive` trong `/opt/bbb/config/rclone.conf`, sau đó
+cài systemd timer:
 
 ```bash
-# Đăng ký cron
-sudo crontab -e
-
-# Thêm dòng (chạy mỗi giờ)
-0 * * * * /opt/bbb/scripts/sync-recordings.sh >> /var/log/bbb-recording-sync.log 2>&1
+sudo bash scripts/install-recording-worker.sh
+sudo systemctl status bbb-recording-sync.timer
+sudo journalctl -u bbb-recording-sync.service -n 100 --no-pager
 ```
+
+Worker chỉ xử lý recording đã có marker `*-presentation.done`, có meeting ID
+dạng `lms-session-{session_id}` và đã có `metadata.xml`. Worker upload toàn bộ
+presentation bundle lên Drive, kiểm tra bundle qua `rclone serve`, kiểm tra
+HTTPS link và ký callback HMAC-SHA256. Playback BBB vẫn dùng URL:
+`/playback/presentation/2.3/{recording_id}`; dữ liệu bundle được đọc từ Drive
+qua route nội bộ `/presentation/`. Sau thời gian giữ local cấu hình được, worker
+xóa recording local sau khi upload, playback verification và callback thành
+công. Playback sử dụng VFS cache local tối đa 50 GB; Google Drive là nguồn lưu
+trữ lâu dài sau khi bản gốc trên server được xóa.
+
+Chi tiết biến môi trường, callback, retry và kiểm thử xem
+[docs/RECORDING-PIPELINE.md](docs/RECORDING-PIPELINE.md).
 
 ### Bước 7 — Kiểm tra hoàn tất
 
@@ -227,12 +242,17 @@ bbb/
 ├── README.md                  # File này
 ├── config/
 │   ├── .env.example           # Biến môi trường mẫu (Google Drive, LMS, ...)
+│   ├── bbb-recording-sync.service
+│   ├── bbb-recording-sync.timer
+│   ├── rclone-serve-gdrive.service
+│   ├── recording-playback.nginx
 │   ├── bbb-web.properties     # Override cấu hình BBB web
 │   ├── turnserver.conf        # Cấu hình Coturn mẫu
 │   └── nginx-bbb.conf         # Override Nginx nếu cần
 ├── theme/
 │   ├── logo.png               # Logo trung tâm
 │   ├── favicon.ico            # Favicon
+│   ├── slide-1.png            # Slide mở đầu mặc định
 │   ├── custom.css.template    # CSS template giao diện
 │   ├── playback.css.template  # CSS template trang xem lại bản ghi
 │   ├── locale-overrides.json  # Chuỗi tiếng Việt bổ sung
@@ -240,7 +260,9 @@ bbb/
 ├── scripts/
 │   ├── apply-theme.sh         # Script áp dụng theme lên BBB
 │   ├── remove-theme.sh        # Script gỡ theme
-│   ├── sync-recordings.sh     # Script đồng bộ recording → Google Drive
+│   ├── sync-recordings.sh     # Worker đồng bộ recording → Drive → LMS
+│   ├── serve-recordings.sh     # Phục vụ bundle Drive cho BBB playback
+│   ├── install-recording-worker.sh
 │   ├── backup-config.sh       # Backup cấu hình BBB
 │   ├── test-api.sh            # Script test API nhanh
 │   └── healthcheck.sh         # Kiểm tra trạng thái server

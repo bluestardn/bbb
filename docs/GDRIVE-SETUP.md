@@ -62,6 +62,15 @@ scope = drive
 service_account_file = /opt/bbb/config/gdrive-service-account.json
 ```
 
+Worker và `rclone-serve-gdrive.service` dùng `GDRIVE_FOLDER_ID` làm Drive root
+của rclone. Mỗi recording được lưu trực tiếp theo cấu trúc `{recording_id}/`
+để BBB playback đọc bundle qua route `/presentation/`.
+
+Playback sử dụng VFS cache trên ổ cứng server để hạn chế tải lặp từ Google
+Drive. Cấu hình mặc định giữ tối đa 50 GB cache trong
+`/var/cache/bbb-rclone`. Đây không phải bản recording gốc và có thể bị rclone
+dọn khi đạt giới hạn dung lượng hoặc hết thời gian cache.
+
 ---
 
 ## 4. Test đồng bộ thủ công
@@ -72,9 +81,11 @@ service_account_file = /opt/bbb/config/gdrive-service-account.json
 # Liệt kê danh sách thư mục/file trên Google Drive (thư mục được share với Service Account)
 rclone lsd gdrive: --config="/opt/bbb/config/rclone.conf"
 
-# Thử tạo 1 file test và upload lên thư mục được chỉ định
+# Thử tạo 1 file test và upload vào root đã cấu hình
 echo "test" > /tmp/test.txt
-rclone copy /tmp/test.txt "gdrive:$GDRIVE_FOLDER_ID" --config="/opt/bbb/config/rclone.conf"
+rclone copy /tmp/test.txt "gdrive:test" \
+  --config="/opt/bbb/config/rclone.conf" \
+  --drive-root-folder-id="$GDRIVE_FOLDER_ID"
 ```
 
 Nếu thành công, file `test.txt` sẽ xuất hiện trên Google Drive của bạn.

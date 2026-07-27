@@ -46,6 +46,7 @@ Khi cài đặt thành công, script tạo:
 - `/etc/bigbluebutton/nginx/edura-branding.nginx`
 - Các override cần thiết trong `/etc/bigbluebutton/bbb-html5.yml`
 - Welcome message và footer trong `/etc/bigbluebutton/bbb-web.properties`
+- Slide mở đầu mặc định từ `theme/slide-1.png`
 - CSS và metadata thương hiệu cho trang playback bản ghi
 - Locale tiếng Việt cho trạng thái lỗi, kết thúc và mất kết nối
 - Hook trong `/etc/bigbluebutton/bbb-conf/apply-config.sh`
@@ -74,10 +75,12 @@ curl -I https://bbb.example.com/branding/custom.css
 curl -I https://bbb.example.com/branding/playback.css
 curl -I https://bbb.example.com/logo.png
 curl -I https://bbb.example.com/favicon.ico
+curl -I https://bbb.example.com/branding/slide-1.png
 ```
 
-Tạo một meeting mới sau khi áp dụng để kiểm tra welcome message, footer và
-giao diện HTML5. Meeting đã tồn tại giữ welcome message cũ.
+Tạo một meeting mới sau khi áp dụng để kiểm tra welcome message, footer, slide
+mở đầu và giao diện HTML5. Meeting đã tồn tại giữ welcome message và
+presentation cũ.
 
 Mở một recording đã publish để kiểm tra tiêu đề
 `Edura - Xem lại bài giảng`, favicon, màu điều khiển, logo và thông tin hỗ trợ.

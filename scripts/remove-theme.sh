@@ -11,6 +11,7 @@ readonly HTML5_LOCALE_GZIP="${HTML5_LOCALE}.gz"
 readonly NGINX_CONFIG="/etc/bigbluebutton/nginx/edura-branding.nginx"
 readonly APPLY_CONFIG="/etc/bigbluebutton/bbb-conf/apply-config.sh"
 readonly STATE_FILE="${INSTALL_ROOT}/previous-config.json"
+readonly DEFAULT_PRESENTATION_STATE="${INSTALL_ROOT}/previous-default-presentation.json"
 readonly PLAYBACK_ROOT="/var/bigbluebutton/playback/presentation/2.3"
 readonly PLAYBACK_INDEX="${PLAYBACK_ROOT}/index.html"
 readonly PLAYBACK_STATE="${INSTALL_ROOT}/previous-playback.json"
@@ -115,6 +116,43 @@ path.write_text("\n".join(restored) + ("\n" if restored else ""), encoding="utf-
 PY
 }
 
+restore_default_presentation() {
+    local key="beans.presentationService.defaultUploadedPresentation"
+
+    if [[ ! -f "${DEFAULT_PRESENTATION_STATE}" ]]; then
+        sed -i "/^${key}=/d" "${WEB_CONFIG}"
+        return
+    fi
+
+    python3 - "${WEB_CONFIG}" "${DEFAULT_PRESENTATION_STATE}" "${key}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+state = json.loads(Path(sys.argv[2]).read_text(encoding="utf-8"))
+key = sys.argv[3]
+lines = path.read_text(encoding="utf-8").splitlines() if path.exists() else []
+updated = []
+restored = False
+
+for line in lines:
+    current_key = line.split("=", 1)[0]
+    if current_key != key:
+        updated.append(line)
+        continue
+
+    if state["present"] and not restored:
+        updated.append(f"{key}={state['value']}")
+        restored = True
+
+if state["present"] and not restored:
+    updated.append(f"{key}={state['value']}")
+
+path.write_text("\n".join(updated) + ("\n" if updated else ""), encoding="utf-8")
+PY
+}
+
 restore_playback_page() {
     [[ -f "${PLAYBACK_INDEX}" ]] || return
 
@@ -191,6 +229,7 @@ PY
 if [[ -f "${STATE_FILE}" ]]; then
     restore_html5_config
     restore_web_config
+    restore_default_presentation
 else
     if [[ -f "${HTML5_CONFIG}" ]]; then
         yq eval --inplace '
@@ -207,6 +246,7 @@ else
 
     if [[ -f "${WEB_CONFIG}" ]]; then
         sed -i \
+            -e '/^beans\.presentationService\.defaultUploadedPresentation=/d' \
             -e '/^defaultWelcomeMessage=/d' \
             -e '/^defaultWelcomeMessageFooter=/d' \
             "${WEB_CONFIG}"
@@ -240,7 +280,8 @@ rm -f \
     "${WEB_ROOT}/custom.css" \
     "${WEB_ROOT}/playback.css" \
     "${WEB_ROOT}/favicon.ico" \
-    "${WEB_ROOT}/logo.png"
+    "${WEB_ROOT}/logo.png" \
+    "${WEB_ROOT}/slide-1.png"
 rmdir "${WEB_ROOT}" 2>/dev/null || true
 rm -rf "${INSTALL_ROOT}"
 
