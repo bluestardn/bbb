@@ -40,25 +40,27 @@ form:has([data-test="sendMessageButton"]) textarea:focus-visible {
 
 [data-test="messageTitle"] {
   box-sizing: border-box;
-  width: 100%;
   min-height: 94px !important;
-  padding: 52px 10px 4px !important;
+  width: 100%;
+  padding: 56px 10px 6px !important;
   background-image: url("/logo.png") !important;
-  background-position: 10px 6px !important;
+  background-position: center 6px !important;
   background-repeat: no-repeat !important;
-  background-size: auto 38px !important;
+  background-size: auto 44px !important;
   border-bottom: 1px solid color-mix(in srgb, {{PRIMARY_COLOR}} 24%, transparent) !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
 }
 
 [data-test="messageTitle"]::after {
   content: "Hotline: {{HOTLINE}} · {{SUPPORT_EMAIL}}";
   display: block;
-  margin-top: 2px;
+  margin-top: 0;
   color: {{TEXT_COLOR}};
   font-size: 10px;
   font-weight: 600;
   line-height: 15px;
-  text-align: left;
+  text-align: center;
   text-transform: none;
 }
 

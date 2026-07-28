@@ -57,7 +57,15 @@ restore_html5_config() {
     restore_html5_string "client_title" ".public.app.clientTitle"
     restore_html5_string "copyright" ".public.app.copyright"
     restore_html5_string "custom_style_url" ".public.app.customStyleUrl"
-    restore_html5_string "override_locale" ".public.app.overrideLocale"
+    restore_html5_string \
+        "fallback_locale" \
+        ".public.app.defaultSettings.application.fallbackLocale"
+    restore_html5_string \
+        "legacy_override_locale" \
+        ".public.app.overrideLocale"
+    restore_html5_string \
+        "override_locale" \
+        ".public.app.defaultSettings.application.overrideLocale"
 
     if jq -e '.html5.display_branding_area.present == true' "${STATE_FILE}" >/dev/null; then
         RESTORE_VALUE="$(jq -r '.html5.display_branding_area.value' "${STATE_FILE}")" \

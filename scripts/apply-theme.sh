@@ -354,13 +354,17 @@ def setting(container, key):
 public = html5.get("public") or {}
 app = public.get("app") or {}
 branding = app.get("branding") or {}
+default_settings = app.get("defaultSettings") or {}
+application = default_settings.get("application") or {}
 state = {
     "html5": {
         "client_title": setting(app, "clientTitle"),
         "copyright": setting(app, "copyright"),
         "custom_style_url": setting(app, "customStyleUrl"),
         "display_branding_area": setting(branding, "displayBrandingArea"),
-        "override_locale": setting(app, "overrideLocale"),
+        "fallback_locale": setting(application, "fallbackLocale"),
+        "legacy_override_locale": setting(app, "overrideLocale"),
+        "override_locale": setting(application, "overrideLocale"),
     },
     "web": {
         key: {
@@ -580,8 +584,10 @@ yq eval --inplace '
     .public.app.clientTitle = strenv(CLIENT_TITLE) |
     .public.app.copyright = strenv(COPYRIGHT_TEXT) |
     .public.app.customStyleUrl = strenv(STYLE_URL) |
-    .public.app.overrideLocale = "vi-VN" |
+    .public.app.defaultSettings.application.fallbackLocale = "en" |
+    .public.app.defaultSettings.application.overrideLocale = "vi-VN" |
     .public.app.branding.displayBrandingArea = true |
+    del(.public.app.overrideLocale) |
     del(.public.branding)
 ' "${HTML5_CONFIG}"
 

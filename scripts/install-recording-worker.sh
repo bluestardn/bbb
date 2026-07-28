@@ -28,10 +28,15 @@ source "$ENV_FILE"
 
 RCLONE_SERVE_CACHE_DIR="${RCLONE_SERVE_CACHE_DIR:-/var/cache/bbb-rclone}"
 
+chgrp bigbluebutton "$INSTALL_ROOT/config"
+chmod 0770 "$INSTALL_ROOT/config"
 chown bigbluebutton:bigbluebutton \
     "$ENV_FILE" \
     "$INSTALL_ROOT/config/rclone.conf"
 chmod 0640 "$ENV_FILE" "$INSTALL_ROOT/config/rclone.conf"
+chgrp bigbluebutton \
+    "$INSTALL_ROOT/scripts/sync-recordings.sh" \
+    "$INSTALL_ROOT/scripts/serve-recordings.sh"
 chmod 0750 "$INSTALL_ROOT/scripts/sync-recordings.sh"
 chmod 0750 "$INSTALL_ROOT/scripts/serve-recordings.sh"
 
