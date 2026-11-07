@@ -1,3 +1,8 @@
+# rclone serves directory listings; the player only requests individual files.
+location ~ ^/presentation/(.*/)?$ {
+    return 404;
+}
+
 location /presentation/ {
     proxy_pass http://127.0.0.1:8081/;
     proxy_set_header Host $host;
