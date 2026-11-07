@@ -1,9 +1,9 @@
 {
   "center_name": "Edura",
-  "logo_url": "theme/logo.png",
-  "favicon_url": "theme/favicon.ico",
-  "hotline": "0236.xxxx.xxx",
-  "support_email": "support@edura.edu.vn",
+  "client_title": "Edura - Phòng học trực tuyến",
+  "copyright": "© 2026 Edura",
+  "hotline": "0914 491 211",
+  "support_email": "cskh@edura.vn",
   "colors": {
     "primary": "#dc2626",
     "secondary": "#991b1b",

@@ -1,0 +1,336 @@
+:root {
+    --blue: {{PRIMARY_COLOR}} !important;
+    --red: {{PRIMARY_COLOR}} !important;
+    --button-solid-background-color: {{PRIMARY_COLOR}} !important;
+    --button-solid-color: #ffffff !important;
+    --color-accent: {{PRIMARY_COLOR}} !important;
+    --loader-color: {{PRIMARY_COLOR}} !important;
+}
+
+body,
+#root,
+.player-wrapper {
+    background: {{BACKGROUND_COLOR}} !important;
+    color: {{TEXT_COLOR}} !important;
+    font-family: Inter, "Segoe UI", system-ui, sans-serif !important;
+}
+
+.top-bar {
+    background: #ffffff !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    box-shadow: 0 1px 3px rgb(15 23 42 / 6%) !important;
+    color: {{TEXT_COLOR}} !important;
+    min-height: 60px !important;
+}
+
+.top-bar .title {
+    color: {{TEXT_COLOR}} !important;
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+}
+
+.top-bar .button {
+    border-radius: 6px !important;
+    color: #475569 !important;
+    transition:
+        background-color 160ms ease,
+        color 160ms ease !important;
+}
+
+.top-bar .button:hover,
+.top-bar .button:focus-visible {
+    background: rgb(220 38 38 / 10%) !important;
+    color: {{PRIMARY_COLOR}} !important;
+}
+
+.player-wrapper.hidden-section .top-bar .left .button-wrapper {
+    margin-left: 132px !important;
+}
+
+.media {
+    background: #ffffff !important;
+    box-sizing: border-box !important;
+    padding-top: 60px !important;
+    position: relative !important;
+}
+
+.media::before {
+    background: #ffffff !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    content: "";
+    height: 60px;
+    inset: 0 0 auto;
+    position: absolute;
+    z-index: 2;
+}
+
+.media::after {
+    background: url("/logo.png") left center / contain no-repeat;
+    content: "";
+    height: 30px;
+    left: 20px;
+    pointer-events: none;
+    position: absolute;
+    top: 5px;
+    width: 100px;
+    z-index: 3;
+}
+
+.webcams-wrapper::before {
+    color: #64748b !important;
+    content: "Hỗ trợ: {{HOTLINE}} · {{SUPPORT_EMAIL}}";
+    font-size: 10px;
+    font-weight: 600;
+    left: 20px;
+    line-height: 1;
+    pointer-events: none;
+    position: absolute;
+    top: 41px;
+    white-space: nowrap;
+    z-index: 3;
+}
+
+.player-wrapper.hidden-section .webcams-wrapper::before {
+    display: none;
+}
+
+.application {
+    background: #ffffff !important;
+    border-right: 1px solid #e2e8f0 !important;
+    color: {{TEXT_COLOR}} !important;
+}
+
+.application-control {
+    background: #ffffff !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    color: #64748b !important;
+}
+
+.application-control .application-icon {
+    border-radius: 5px !important;
+    color: #64748b !important;
+    transition:
+        background-color 160ms ease,
+        color 160ms ease !important;
+}
+
+.application-control .application-icon:not(.inactive),
+.application-control .application-icon:hover {
+    background: rgb(220 38 38 / 10%) !important;
+    color: {{PRIMARY_COLOR}} !important;
+}
+
+.chat-wrapper,
+.chat {
+    background: #ffffff !important;
+    color: {{TEXT_COLOR}} !important;
+}
+
+.chat-wrapper .message .name,
+.chat .message .name {
+    color: {{PRIMARY_COLOR}} !important;
+    font-weight: 700 !important;
+}
+
+.chat-wrapper .message .time,
+.chat .message .time {
+    color: #94a3b8 !important;
+}
+
+.system-message-wrapper,
+.reply-tag {
+    background: rgb(220 38 38 / 7%) !important;
+    border-left: 3px solid {{PRIMARY_COLOR}} !important;
+}
+
+.presentation-wrapper {
+    background: #e9eef5 !important;
+    box-shadow: inset 0 0 0 1px rgb(148 163 184 / 20%) !important;
+    overflow: hidden !important;
+}
+
+.presentation {
+    background: #ffffff !important;
+    box-shadow: 0 8px 28px rgb(15 23 42 / 10%) !important;
+}
+
+.error-wrapper {
+    align-items: center !important;
+    background: {{BACKGROUND_COLOR}} !important;
+    color: {{TEXT_COLOR}} !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    min-height: 100% !important;
+    padding: 32px !important;
+    text-align: center !important;
+}
+
+.error-wrapper::before {
+    background: url("/logo.png") center / contain no-repeat;
+    content: "";
+    height: 52px;
+    margin-bottom: 20px;
+    width: 164px;
+}
+
+.error-code {
+    color: {{TEXT_COLOR}} !important;
+    font-size: 0 !important;
+    font-weight: 700 !important;
+}
+
+.error-code::before {
+    content: "Không thể tải bản ghi bài giảng";
+    display: block;
+    font-size: 22px;
+    line-height: 30px;
+}
+
+.error-code::after {
+    color: #64748b;
+    content: "Bản ghi đang được xử lý, không tồn tại hoặc tạm thời không thể tải.";
+    display: block;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 22px;
+    margin-top: 8px;
+}
+
+.error-wrapper::after {
+    color: #64748b;
+    content: "Hỗ trợ: {{HOTLINE}} · {{SUPPORT_EMAIL}}";
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 18px;
+    margin-top: 20px;
+}
+
+.fullscreen-button {
+    background: {{PRIMARY_COLOR}} !important;
+    border-radius: 6px 0 0 6px !important;
+    box-shadow: 0 4px 12px rgb(220 38 38 / 24%) !important;
+    color: #ffffff !important;
+}
+
+.bottom-content,
+.thumbnails-wrapper {
+    background: #f1f5f9 !important;
+    color: #64748b !important;
+}
+
+.thumbnail-wrapper {
+    border: 2px solid transparent !important;
+    border-radius: 4px !important;
+    transition:
+        border-color 160ms ease,
+        box-shadow 160ms ease !important;
+}
+
+.thumbnail-wrapper:hover,
+.thumbnail-wrapper:focus-visible {
+    border-color: {{PRIMARY_COLOR}} !important;
+    box-shadow: 0 0 0 2px rgb(220 38 38 / 12%) !important;
+}
+
+.thumbnail-wrapper.interactive {
+    border-color: {{PRIMARY_COLOR}} !important;
+}
+
+.bottom-bar {
+    background: #1e293b !important;
+    color: #ffffff !important;
+}
+
+.video-js .vjs-control-bar {
+    background: linear-gradient(0deg, rgb(15 23 42 / 98%), rgb(30 41 59 / 92%)) !important;
+}
+
+.video-js .vjs-play-progress,
+.video-js .vjs-volume-level {
+    background: {{PRIMARY_COLOR}} !important;
+}
+
+.video-js .vjs-slider {
+    background: rgb(255 255 255 / 20%) !important;
+}
+
+.video-js .vjs-load-progress {
+    background: rgb(255 255 255 / 28%) !important;
+}
+
+.video-js .vjs-big-play-button {
+    background: {{PRIMARY_COLOR}} !important;
+    border: 0 !important;
+    border-radius: 50% !important;
+    box-shadow: 0 8px 24px rgb(220 38 38 / 30%) !important;
+    height: 64px !important;
+    left: 50vw !important;
+    line-height: 64px !important;
+    margin: 0 !important;
+    position: fixed !important;
+    top: 50vh !important;
+    transition:
+        box-shadow 160ms ease,
+        transform 160ms ease !important;
+    transform: translate(-50%, -50%) !important;
+    width: 64px !important;
+    z-index: 4 !important;
+}
+
+.video-js .vjs-big-play-button:hover,
+.video-js .vjs-big-play-button:focus-visible {
+    box-shadow: 0 10px 30px rgb(220 38 38 / 40%) !important;
+    transform: translate(-50%, -50%) scale(1.06) !important;
+}
+
+::-webkit-scrollbar {
+    height: 6px;
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: {{PRIMARY_COLOR}};
+}
+
+@media (max-width: 720px) {
+    .media {
+        padding-top: 52px !important;
+    }
+
+    .media::before {
+        height: 52px;
+    }
+
+    .media::after {
+        height: 28px;
+        left: 14px;
+        top: 5px;
+        width: 88px;
+    }
+
+    .webcams-wrapper::before {
+        font-size: 9px;
+        left: 14px;
+        top: 39px;
+    }
+
+    .player-wrapper.hidden-section .top-bar .left .button-wrapper {
+        margin-left: 108px !important;
+    }
+
+    .video-js .vjs-big-play-button {
+        height: 56px !important;
+        line-height: 56px !important;
+        width: 56px !important;
+    }
+}

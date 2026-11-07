@@ -1,0 +1,15 @@
+[Unit]
+Description=Upload completed BigBlueButton recordings and notify LMS
+After=network-online.target rclone-serve-gdrive.service
+Wants=network-online.target
+Requires=rclone-serve-gdrive.service
+
+[Service]
+Type=oneshot
+User=bigbluebutton
+Group=bigbluebutton
+ExecStart=/opt/bbb/scripts/sync-recordings.sh
+UMask=0077
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

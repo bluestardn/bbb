@@ -1,0 +1,16 @@
+[Unit]
+Description=Serve BigBlueButton recordings from Google Drive
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=bigbluebutton
+Group=bigbluebutton
+ExecStart=/opt/bbb/scripts/serve-recordings.sh
+Restart=always
+RestartSec=5
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
